@@ -7,11 +7,11 @@ from io import StringIO
 
 st.set_page_config(page_title="Camara Gemini Live Extractor")
 st.title("Camara Attendance Extractor - Powered by Gemini AI")
-st.write("Mfumo wa mtandaoni (Live) wa kuchakata fomu za CamScanner kwa kutumia uwezo wa juu wa Gemini AI.")
+st.write("Mfumo wa mtandaoni (Live) wa kuchakata fomu za CamScanner kwa kasi na ufanisi wa juu.")
 
 # Sehemu ya kuweka API Key kwenye Sidebar ya app yako
 st.sidebar.header("Mipangilio ya AI")
-api_key_input = st.sidebar.text_input("Weka Gemini API Key Yako:", type="password", help="Weka API Key yako uliyochukua Google AI Studio hapa.")
+api_key_input = st.sidebar.text_input("Weka Gemini API Key Yako:", type="password", help="Weka API Key yako hapa.")
 
 uploaded_file = st.file_uploader("Pakia Fomu ya Mahudhurio (PDF)", type=["pdf"])
 role_choice = st.selectbox("Chagua Kategoria:", ["Teacher", "Student"])
@@ -19,28 +19,27 @@ role_choice = st.selectbox("Chagua Kategoria:", ["Teacher", "Student"])
 if uploaded_file is not None:
     original_filename = os.path.splitext(uploaded_file.name)[0]
     
-    if st.button("Chakata Kupitia Gemini AI"):
+    if st.button("Chakata kwa Kasi (Fast Process)"):
         if not api_key_input:
-            st.error("Tafadhali weka Gemini API Key yako kwenye kisanduku cha upande wa kushoto (Sidebar) ndipo uendelee.")
+            st.error("Tafadhali weka Gemini API Key yako kwenye kisanduku cha upande wa kushoto.")
         else:
-            with st.spinner("Gemini AI inasoma fomu yako na kupanga kila kitu... Subiri sekunde chache."):
+            with st.spinner("Inachakata kwa kasi... Tafadhali subiri kidogo."):
                 try:
-                    # Anzisha mteja wa Gemini
                     client = genai.Client(api_key=api_key_input)
-                    
                     pdf_bytes = uploaded_file.read()
                     
+                    # Prompt fupi na ya moja kwa moja ili kuongeza kasi ya majibu
                     prompt = f"""
-                    Hili ni faili la fomu ya mahudhurio ya Shule ya Camara (kategoria: {role_choice}).
-                    Tafadhali soma kurasa zote za PDF hii kwa umakini mkubwa (hata kama ni picha za CamScanner zilizochakaa au kuandikwa kwa mkono).
+                    Soma fomu hii ya {role_choice} na utoe orodha ya watu wote kwa mfumo wa safu (CSV) zenye vichwa hivi pekee:
+                    Full Name,Phone,Email,Position
                     
-                    Tafuta na utoe orodha ya watu wote waliomo kwenye fomu hii ukitengeneza safu zifuatazo pekee:
-1. Full Name (Jina kamili la mtu, ondoa maneno ya ziada kama jina la shule au madaraja).
-2. Phone (Namba ya simu ya Tanzania inayoanza na 06 au 07. Kama ni mwanafunzi na hakuna namba kwenye fomu, acha wazi au uweke tupu).
-3. Email (Weka tupu kwa sasa).
-4. Position (Weka neno "{role_choice}" isipokuwa kama picha imeandikwa wazi kuwa ni mkuu wa shule, basi andika "Head Master").
+                    Kanuni:
+                    - Full Name: Jina kamili bila maneno ya ziada.
+                    - Phone: Namba ya simu ya Tanzania inayoanza na 06 au 07 (acha wazi kama hakuna).
+                    - Email: Weka tupu.
+                    - Position: Andika "{role_choice}" isipokuwa kama ni mkuu wa shule andika "Head Master".
                     
-                    Rudisha majibu yako YOTE kwa mfumo wa CSV safi kabisa yenye kichwa cha habari (Header): Full Name,Phone,Email,Position. Usiandike maelezo mengine yoyote ya ziada, toa data za CSV pekee.
+                    Toa data za CSV pekee bila maelezo ya ziada.
                     """
                     
                     response = client.models.generate_content(
@@ -63,8 +62,7 @@ if uploaded_file is not None:
                     df = pd.read_csv(StringIO(csv_text))
                     
                     if not df.empty:
-                        st.success(f"Gemini AI imefanikiwa kusoma na kuchomoa kumbukumbu {len(df)} kwa ufasaha mkubwa.")
-                        
+                        st.success(f"Imefanikiwa! Imepatikana kumbukumbu {len(df)}.")
                         edited_df = st.data_editor(df, num_rows="dynamic", use_container_width=True)
                         
                         csv_data = edited_df.to_csv(index=False).encode('utf-8')
@@ -77,6 +75,6 @@ if uploaded_file is not None:
                             mime="text/csv",
                         )
                     else:
-                        st.warning("Gemini haijapata taarifa za kutosha kwenye fomu hii.")
+                        st.warning("Hakuna taarifa za kutosha zilizopatikana.")
                 except Exception as e:
-                    st.error(f"Hitilafu imetokea wakati wa kuwasiliana na AI: {e}")
+                    st.error(f"Hitilafu imetokea: {e}")
